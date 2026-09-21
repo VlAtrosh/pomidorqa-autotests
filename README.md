@@ -1,6 +1,8 @@
 # PomidorQA - автотесты
 
 [![Playwright CI](https://github.com/VlAtrosh/pomidorqa-autotests/actions/workflows/playwright.yml/badge.svg)](https://github.com/VlAtrosh/pomidorqa-autotests/actions/workflows/playwright.yml)
+![Tests](https://img.shields.io/badge/tests-42_passed-success)
+![Coverage](https://img.shields.io/badge/coverage-80%25-green)
 
 Проект автотестов для [PomidorQA](https://aiqa.su/pomidorqa) - сервиса коротких
 25-минутных звонков для QA/IT-специалистов. Проверяет регистрацию, профиль, навыки,
@@ -161,9 +163,9 @@ HTTP-контракты, где UI не нужен для доказательс
 **Кросс-браузерность:** основной E2E-набор выполняется в Chromium с `retries=0`.
 Внутри browser job используется `workers=4`, чтобы не перегружать внешний стенд.
 
-
-
 ## Отчет
 
 Последний HTML-отчет: [GitHub Actions → Artifacts](https://github.com/VlAtrosh/pomidorqa-autotests/actions)
+
+
 
