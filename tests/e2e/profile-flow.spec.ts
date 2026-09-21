@@ -18,7 +18,7 @@ test.describe('Профиль: действия с полями', () => {
 
   test.afterEach(async () => {
     await cleanupUsersViaApi([context]);
-    await context.close(); //
+    await context.close();
   });
 
   test('имя: вводим новое и сохраняем', async () => {
@@ -147,6 +147,35 @@ test.describe('Профиль: действия с полями', () => {
       await expect(profilePage.bioInput).toHaveValue(bio, {
         timeout: 30_000,
       });
+    });
+  });
+
+  test('навык: добавляем "Хочу разобрать"', async () => {
+    const tag = `WantToLearn-${Date.now()}`;
+
+    await test.step('Добавляем навык "Хочу разобрать"', async () => {
+      await profilePage.addSkill(tag, 'want_to_learn');
+    });
+
+    await test.step('Навык появился в блоке "Хочу разобрать"', async () => {
+      await expect(profilePage.wantToLearnSkills).toContainText(tag);
+    });
+  });
+
+  test('негатив: дубликат навыка не добавляется', async () => {
+    const tag = `Duplicate-${Date.now()}`;
+
+    await test.step('Добавляем навык первый раз', async () => {
+      await profilePage.addSkill(tag, 'can_help');
+      await expect(profilePage.canHelpSkills).toContainText(tag);
+    });
+
+    await test.step('Пытаемся добавить тот же навык ещё раз', async () => {
+      await profilePage.addSkill(tag, 'can_help');
+    });
+
+    await test.step('Навык остался в единственном экземпляре', async () => {
+      await expect(profilePage.skillTag(tag)).toHaveCount(1);
     });
   });
 });

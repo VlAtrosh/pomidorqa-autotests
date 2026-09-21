@@ -2,6 +2,7 @@ import { test, expect, BrowserContext } from '@playwright/test';
 import { makeUser, registerUser, addDate, cleanupUsersViaApi } from '../helpers/user';
 import { BookingPage } from '../pages/BookingPage';
 import { ProfilePage } from '../pages/ProfilePage';
+import { SlotsPage } from '../pages/SlotsPage';
 
 test.describe('Бронирование, гонка за слот', () => {
   let hostContext: BrowserContext;
@@ -28,6 +29,7 @@ test.describe('Бронирование, гонка за слот', () => {
     const guest2Page = await guest2Context.newPage();
 
     const hostProfile = new ProfilePage(hostPage);
+    const hostSlots = new SlotsPage(hostPage);
     const guestBooking = new BookingPage(guestPage);
     const guest2Booking = new BookingPage(guest2Page);
 
@@ -43,9 +45,9 @@ test.describe('Бронирование, гонка за слот', () => {
 
     await test.step('Хост: добавляет свободный слот на завтра', async () => {
       const date = addDate();
-      await hostProfile.goToSlots();
-      await hostProfile.addSlot(date, '12:00');
-      await expect(hostProfile.slotCard.first()).toBeVisible();
+      await hostSlots.goToSlots();
+      await hostSlots.addSlot(date, '12:00');
+      await expect(hostSlots.slotCard.first()).toBeVisible();
     });
 
     await test.step('Гость: регистрация', async () => {

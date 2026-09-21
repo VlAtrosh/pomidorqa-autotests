@@ -2,6 +2,7 @@ import { test, expect, type BrowserContext } from '@playwright/test';
 import { makeUser, registerUser, addDate, type TestUser } from '../helpers/user';
 import { ProfilePage } from '../pages/ProfilePage';
 import { BookingPage } from '../pages/BookingPage';
+import { SlotsPage } from '../pages/SlotsPage';
 
 test.describe('Каталог: поиск по навыку', () => {
   let host: TestUser;
@@ -10,6 +11,7 @@ test.describe('Каталог: поиск по навыку', () => {
   let hostContext: BrowserContext;
   let guestContext: BrowserContext;
   let hostProfile: ProfilePage;
+  let hostSlots: SlotsPage;
   let hostBooking: BookingPage;
   let guestBooking: BookingPage;
 
@@ -25,6 +27,7 @@ test.describe('Каталог: поиск по навыку', () => {
     const guestPage = await guestContext.newPage();
 
     hostProfile = new ProfilePage(hostPage);
+    hostSlots = new SlotsPage(hostPage);
     hostBooking = new BookingPage(hostPage);
     guestBooking = new BookingPage(guestPage);
 
@@ -48,9 +51,9 @@ test.describe('Каталог: поиск по навыку', () => {
     });
 
     await test.step('Хост: добавляет свободный слот на завтра', async () => {
-      await hostProfile.goToSlots();
+      await hostSlots.goToSlots();
       const date = addDate();
-      await hostProfile.addSlot(date, '12:00');
+      await hostSlots.addSlot(date, '12:00');
     });
 
     await test.step('Слот появился в списке', async () => {
@@ -113,9 +116,9 @@ test.describe('Каталог: поиск по навыку', () => {
     });
 
     await test.step('Хост: добавляет свободный слот на завтра', async () => {
-      await hostProfile.goToSlots();
+      await hostSlots.goToSlots();
       const date = addDate();
-      await hostProfile.addSlot(date, '12:00');
+      await hostSlots.addSlot(date, '12:00');
     });
 
     await test.step('Слот появился в списке', async () => {

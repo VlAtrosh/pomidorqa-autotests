@@ -1,6 +1,6 @@
-import http from "node:http";
-import { randomUUID } from "node:crypto";
-import type { AddressInfo } from "node:net";
+import http from 'node:http';
+import { randomUUID } from 'node:crypto';
+import type { AddressInfo } from 'node:net';
 
 // Мини-имитация бизнес-правил бронирования PomidorQA (см. pomidorqa_book_slot() в
 // aiqa-app/supabase-pomidorqa.sql) в виде обычного HTTP API. На эфире показываем API-уровень
@@ -9,7 +9,7 @@ export interface Slot {
   id: string;
   ownerId: string;
   startTime: string; // ISO
-  status: "free" | "booked";
+  status: 'free' | 'booked';
 }
 
 export interface Booking {
@@ -17,7 +17,7 @@ export interface Booking {
   slotId: string;
   hostId: string;
   guestId: string;
-  status: "confirmed" | "cancelled";
+  status: 'confirmed' | 'cancelled';
 }
 
 export interface Participant {
@@ -29,7 +29,7 @@ export interface Participant {
 export class ApiError extends Error {
   constructor(
     public status: number,
-    public code: string
+    public code: string,
   ) {
     super(code);
   }
@@ -42,7 +42,7 @@ export class BookingStore {
   private participantsByEmail = new Map<string, Participant>();
 
   createSlot(ownerId: string, startTime: string): Slot {
-    const slot: Slot = { id: randomUUID(), ownerId, startTime, status: "free" };
+    const slot: Slot = { id: randomUUID(), ownerId, startTime, status: 'free' };
     this.slots.set(slot.id, slot);
     return slot;
   }
@@ -52,7 +52,7 @@ export class BookingStore {
    * как и в реальной регистрации PomidorQA через Supabase Auth.
    */
   registerParticipant(name: string, email: string): Participant {
-    if (this.participantsByEmail.has(email)) throw new ApiError(409, "email_taken");
+    if (this.participantsByEmail.has(email)) throw new ApiError(409, 'email_taken');
 
     const participant: Participant = { id: randomUUID(), name, email };
     this.participantsByEmail.set(email, participant);
@@ -67,7 +67,10 @@ export class BookingStore {
   bookSlot(slotId: string, userId: string): Promise<Booking> {
     const previous = this.queues.get(slotId) ?? Promise.resolve();
     const task = previous.then(() => this.doBook(slotId, userId));
-    this.queues.set(slotId, task.catch(() => undefined));
+    this.queues.set(
+      slotId,
+      task.catch(() => undefined),
+    );
     return task;
   }
 
@@ -77,20 +80,46 @@ export class BookingStore {
     await new Promise((resolve) => setTimeout(resolve, 30));
 
     const slot = this.slots.get(slotId);
-    if (!slot) throw new ApiError(404, "slot_not_found");
-    if (slot.ownerId === userId) throw new ApiError(409, "cannot_book_own_slot");
-    if (slot.status !== "free") throw new ApiError(409, "slot_already_booked");
-    if (new Date(slot.startTime).getTime() <= Date.now()) throw new ApiError(409, "slot_in_past");
+    if (!slot) throw new ApiError(404, 'slot_not_found');
+    if (slot.ownerId === userId) throw new ApiError(409, 'cannot_book_own_slot');
+    if (slot.status !== 'free') throw new ApiError(409, 'slot_already_booked');
+    if (new Date(slot.startTime).getTime() <= Date.now()) throw new ApiError(409, 'slot_in_past');
 
-    slot.status = "booked";
+    slot.status = 'booked';
     const booking: Booking = {
       id: randomUUID(),
       slotId,
       hostId: slot.ownerId,
       guestId: userId,
-      status: "confirmed",
+      status: 'confirmed',
     };
     this.bookings.set(booking.id, booking);
+    return booking;
+  }
+  cancelBooking(bookingId: string): Promise<Booking> {
+    const previous = this.queues.get(bookingId) ?? Promise.resolve();
+    const task = previous.then(() => this.doCancel(bookingId));
+    this.queues.set(
+      bookingId,
+      task.catch(() => undefined),
+    );
+    return task;
+  }
+
+  private async doCancel(bookingId: string): Promise<Booking> {
+    const booking = this.bookings.get(bookingId);
+    if (!booking) throw new ApiError(404, 'booking_not_found');
+    if (booking.status !== 'confirmed') throw new ApiError(409, 'already_cancelled');
+
+    const slot = this.slots.get(booking.slotId);
+    if (!slot) throw new ApiError(404, 'slot_not_found');
+
+    // R11.2: отмена не позднее чем за 2 часа до начала
+    const hoursUntilStart = (new Date(slot.startTime).getTime() - Date.now()) / (1000 * 60 * 60);
+    if (hoursUntilStart < 2) throw new ApiError(409, 'cancel_too_late');
+
+    booking.status = 'cancelled';
+    slot.status = 'free';
     return booking;
   }
 }
@@ -98,21 +127,21 @@ export class BookingStore {
 function readJsonBody(req: http.IncomingMessage): Promise<Record<string, unknown>> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
-    req.on("data", (chunk) => chunks.push(chunk as Buffer));
-    req.on("end", () => {
-      const raw = Buffer.concat(chunks).toString("utf-8");
+    req.on('data', (chunk) => chunks.push(chunk as Buffer));
+    req.on('end', () => {
+      const raw = Buffer.concat(chunks).toString('utf-8');
       try {
         resolve(raw ? JSON.parse(raw) : {});
       } catch (err) {
         reject(err);
       }
     });
-    req.on("error", reject);
+    req.on('error', reject);
   });
 }
 
 function send(res: http.ServerResponse, status: number, body: unknown) {
-  res.writeHead(status, { "Content-Type": "application/json" });
+  res.writeHead(status, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify(body));
 }
 
@@ -121,20 +150,26 @@ export function createServer(store: BookingStore) {
     try {
       const body = await readJsonBody(req);
 
-      if (req.method === "POST" && req.url === "/bookings") {
+      if (req.method === 'POST' && req.url === '/bookings') {
         const booking = await store.bookSlot(String(body.slotId), String(body.userId));
         return send(res, 201, booking);
       }
 
-      if (req.method === "POST" && req.url === "/participants") {
+      if (req.method === 'DELETE' && req.url?.startsWith('/bookings/')) {
+        const bookingId = req.url.replace('/bookings/', '');
+        const booking = await store.cancelBooking(bookingId);
+        return send(res, 200, booking);
+      }
+
+      if (req.method === 'POST' && req.url === '/participants') {
         const participant = store.registerParticipant(String(body.name), String(body.email));
         return send(res, 201, participant);
       }
 
-      return send(res, 404, { error: "not_found" });
+      return send(res, 404, { error: 'not_found' });
     } catch (err) {
       if (err instanceof ApiError) return send(res, err.status, { error: err.code });
-      return send(res, 500, { error: "internal_error" });
+      return send(res, 500, { error: 'internal_error' });
     }
   });
 }

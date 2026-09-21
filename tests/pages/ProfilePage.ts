@@ -2,6 +2,8 @@ import { Locator, Page } from '@playwright/test';
 
 export class ProfilePage {
   readonly page: Page;
+
+  // Поля профиля
   readonly nameInput: Locator;
   readonly telegramInput: Locator;
   readonly timezoneSelect: Locator;
@@ -11,16 +13,12 @@ export class ProfilePage {
   readonly skillInput: Locator;
   readonly skillTypeSelect: Locator;
   readonly addSkillButton: Locator;
+  readonly wantToLearnSkills: Locator;
   readonly canHelpSkills: Locator;
-  readonly skillTag = (tag: string) => this.page.locator(`[data-skill-tag="${tag}"]`);
   readonly skillChips: Locator;
+  readonly skillTag = (tag: string) => this.page.locator(`[data-skill-tag="${tag}"]`);
   readonly removeSkillButton = (tag: string) =>
     this.page.locator(`span[data-skill-tag="${tag}"] button[type="submit"]`);
-
-  readonly slotsDate: Locator;
-  readonly slotsTime: Locator;
-  readonly addSlotButton: Locator;
-  readonly slotCard: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -36,16 +34,13 @@ export class ProfilePage {
     this.skillInput = page.locator('#pomidorqa-profile-skill-input');
     this.skillTypeSelect = page.locator('#pomidorqa-profile-skill-type');
     this.addSkillButton = page.getByRole('button', { name: 'Добавить' });
-    this.canHelpSkills = page.getByTestId('can-help-skills');
+    // this.canHelpSkills = page.getByTestId('can-help-skills');
+    this.canHelpSkills = page.locator('[data-skills="can_help"]');
+    this.wantToLearnSkills = page.locator('[data-skills="want_to_learn"]');
     this.skillChips = page.locator('[data-skill-tag]');
-
-    // Слоты
-    this.slotsDate = page.locator('#pomidorqa-slots-date');
-    this.slotsTime = page.locator('#pomidorqa-slots-time');
-    this.addSlotButton = page.getByRole('button', { name: 'Добавить слот' });
-    this.slotCard = page.locator('[data-slot-id]');
   }
 
+  // ===== Действия: профиль =====
   async changeName(name: string) {
     await this.fillName(name);
     await this.saveProfile();
@@ -74,6 +69,7 @@ export class ProfilePage {
     await saved;
   }
 
+  // ===== Действия: навыки =====
   async addSkill(tag: string, type: 'can_help' | 'want_to_learn') {
     await this.skillInput.fill(tag);
     await this.skillTypeSelect.selectOption(type);
@@ -84,20 +80,7 @@ export class ProfilePage {
     await this.removeSkillButton(tag).click();
   }
 
-  async addSlot(date: string, time: string) {
-    await this.slotsDate.fill(date);
-    await this.slotsTime.fill(time);
-    await this.addSlotButton.click();
-  }
-
-  async goToSlots() {
-    await this.page.goto('/pomidorqa/profile/slots');
-  }
-
-  async goto() {
-    await this.page.goto('/pomidorqa/profile');
-  }
-
+  // ===== Заполнение без сохранения =====
   async fillName(name: string) {
     await this.nameInput.fill(name);
   }
@@ -108,5 +91,10 @@ export class ProfilePage {
 
   async fillBio(bio: string) {
     await this.bioInput.fill(bio);
+  }
+
+  // ===== Навигация =====
+  async goto() {
+    await this.page.goto('/pomidorqa/profile');
   }
 }

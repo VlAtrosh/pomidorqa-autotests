@@ -2,6 +2,7 @@ import { test, expect, type BrowserContext } from '@playwright/test';
 import { makeUser, registerUser, addDate, cleanupUsersViaApi } from '../helpers/user';
 import { BookingPage } from '../pages/BookingPage';
 import { ProfilePage } from '../pages/ProfilePage';
+import { SlotsPage } from '../pages/SlotsPage';
 
 test.describe('Отмена бронирования', () => {
   let hostContext: BrowserContext;
@@ -24,6 +25,7 @@ test.describe('Отмена бронирования', () => {
     const guestPage = await guestContext.newPage();
 
     const hostProfile = new ProfilePage(hostPage);
+    const hostSlots = new SlotsPage(hostPage);
     const hostBooking = new BookingPage(hostPage);
     const guestBooking = new BookingPage(guestPage);
 
@@ -45,12 +47,12 @@ test.describe('Отмена бронирования', () => {
 
     await test.step('Хост: добавляет свободный слот на завтра', async () => {
       const date = addDate();
-      await hostProfile.goToSlots();
-      await hostProfile.addSlot(date, '12:00');
+      await hostSlots.goToSlots();
+      await hostSlots.addSlot(date, '12:00');
     });
 
     await test.step('Слот появился в списке', async () => {
-      await expect(hostProfile.slotCard.first()).toBeVisible();
+      await expect(hostSlots.slotCard.first()).toBeVisible();
     });
 
     await test.step('Гость: ищет хоста в каталоге по навыку', async () => {
@@ -78,7 +80,6 @@ test.describe('Отмена бронирования', () => {
       await expect(guestBooking.confirmSuccess).toBeVisible({ timeout: 15_000 });
     });
 
-    // ===== Проверка у гостя =====
     await test.step('Гость: открывает "Мои встречи"', async () => {
       await guestBooking.goToBookings();
     });
